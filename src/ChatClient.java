@@ -16,7 +16,7 @@ public class ChatClient {
         Scanner scanner = new Scanner(System.in);
 
         try {
-            // --- 1. CONFIGURACIÓN DE CONEXIÓN [cite: 56-58] ---
+            // --- Configuración de Conexión ---
             System.out.println("--- Configuración del Cliente ---");
             System.out.print("IP del servidor (Intro para localhost): ");
             String host = scanner.nextLine();
@@ -27,17 +27,17 @@ public class ChatClient {
             int port = 10000;
             if (!portStr.isEmpty()) port = Integer.parseInt(portStr);
 
-            // Intentar conectar [cite: 59]
+            // Intentar conectar
             socket = new Socket(host, port);
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
-            // --- 2. SOLICITUD DE ALIAS Y HANDSHAKE [cite: 61-64] ---
+            // --- Solicitud de Alias y Handshake ---
             while (true) {
                 System.out.print("Introduce tu alias (sin espacios): ");
                 String alias = scanner.nextLine().trim();
 
-                if (alias.isEmpty() || alias.contains(" ")) { // [cite: 62-63]
+                if (alias.isEmpty() || alias.contains(" ")) {
                     System.out.println("Error: El alias no puede estar vacío ni contener espacios.");
                     continue;
                 }
@@ -46,7 +46,7 @@ public class ChatClient {
                 out.writeObject(new ChatPacket(ChatPacketType.CONNECT, alias, "Solicitando conexión"));
                 out.flush();
 
-                // Esperar respuesta inmediata del servidor [cite: 65]
+                // Esperar respuesta inmediata del servidor
                 ChatPacket response = (ChatPacket) in.readObject();
 
                 if (response.getType() == ChatPacketType.CONNECT) {
@@ -55,36 +55,36 @@ public class ChatClient {
                     break; // Salimos del bucle de conexión
                 } else if (response.getType() == ChatPacketType.ERROR) {
                     System.out.println(">> Error de conexión: " + response.getText());
-                    // [cite: 69] Si hay error, cerramos y terminamos
+                    // Si hay error, cerramos y terminamos
                     socket.close();
                     return;
                 }
             }
 
-            // --- 3. INICIO DEL HILO DE ESCUCHA [cite: 143] ---
+            // --- Inicio del Hilo de Escucha ---
             // Lanzamos el hilo que se quedará leyendo lo que el servidor mande
             Thread listenerThread = new Thread(new ServerListener());
             listenerThread.start();
 
-            // --- 4. BUCLE PRINCIPAL DE ESCRITURA (Hilo Main) [cite: 145] ---
+            // --- Bucle Principal de Escritura (Hilo Main) ---
             System.out.println("Comandos disponibles: \\ALL <msg>, \\PRIVATE <user> <msg>, \\LISTUSERS, \\DISCONNECT");
 
             while (true) {
                 String input = scanner.nextLine();
 
                 if (!input.startsWith("\\")) {
-                    System.out.println("Error: Los comandos deben empezar con '\\'."); // [cite: 78]
+                    System.out.println("Error: Los comandos deben empezar con '\\'.");
                     continue;
                 }
 
-                // Parseo de comandos [cite: 71]
+                // Parseo de comandos
                 String[] parts = input.split(" ", 3); // Dividimos en máximo 3 partes
                 String command = parts[0].toUpperCase();
 
                 ChatPacket packet = null;
 
                 switch (command) {
-                    case "\\DISCONNECT": // [cite: 72]
+                    case "\\DISCONNECT":
                         packet = new ChatPacket(ChatPacketType.USER_LEFT, myAlias, "Desconectando");
                         send(packet);
                         System.out.println("Cerrando cliente...");
@@ -92,7 +92,7 @@ public class ChatClient {
                         System.exit(0);
                         break;
 
-                    case "\\ALL": // [cite: 75]
+                    case "\\ALL":
                         if (parts.length < 2) {
                             System.out.println("Uso: \\ALL <mensaje>");
                         } else {
@@ -105,7 +105,7 @@ public class ChatClient {
                         }
                         break;
 
-                    case "\\PRIVATE": // [cite: 76]
+                    case "\\PRIVATE":
                         if (parts.length < 3) {
                             System.out.println("Uso: \\PRIVATE <usuario> <mensaje>");
                         } else {
@@ -117,12 +117,12 @@ public class ChatClient {
                         }
                         break;
 
-                    case "\\LISTUSERS": // [cite: 77]
+                    case "\\LISTUSERS":
                         packet = new ChatPacket(ChatPacketType.USER_LIST_REQ, myAlias, "");
                         send(packet);
                         break;
 
-                    default: // [cite: 78]
+                    default:
                         System.out.println("Comando no reconocido.");
                 }
             }
@@ -143,14 +143,14 @@ public class ChatClient {
         }
     }
 
-    // --- CLASE INTERNA: HILO DE ESCUCHA [cite: 137, 143] ---
+    // --- Clase Interna: Hilo de Escucha ---
     // Este hilo solo lee del servidor y muestra en pantalla
     static class ServerListener implements Runnable {
         @Override
         public void run() {
             try {
                 while (!socket.isClosed()) {
-                    ChatPacket packet = (ChatPacket) in.readObject(); // [cite: 144]
+                    ChatPacket packet = (ChatPacket) in.readObject();
 
                     switch (packet.getType()) {
                         case PUBLIC_MSG:
@@ -169,7 +169,7 @@ public class ChatClient {
                             System.out.println(">> " + packet.getText());
                             break;
 
-                        case USER_LIST_RESP: // [cite: 115]
+                        case USER_LIST_RESP:
                             List<String> users = packet.getUsers();
                             System.out.println("--- Usuarios Conectados (" + users.size() + ") ---");
                             for (String u : users) {

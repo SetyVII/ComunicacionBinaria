@@ -10,7 +10,7 @@ public class ChatPacket implements Serializable {
     private String from;
     private String to;
     private String text;
-    private List<String> users; // Solo para USER_LIST_RESP [cite: 51]
+    private List<String> users; // Solo para USER_LIST_RESP
 
     // Constructor vacío
     public ChatPacket() {

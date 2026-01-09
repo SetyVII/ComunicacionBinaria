@@ -25,19 +25,17 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         try {
-            // 1. Inicializar Streams
-            // IMPORTANTE: Crear el Output antes que el Input para evitar bloqueo (deadlock) de flujos
+            // Inicializar Streams (Output antes que Input para evitar deadlock)
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
 
-            // 2. Fase de Handshake (Conexión inicial)
-            // Esperamos el primer paquete que DEBE ser CONNECT [cite: 103]
+            // Fase de Handshake
             ChatPacket packet = (ChatPacket) in.readObject();
 
             if (packet.getType() == ChatPacketType.CONNECT) {
                 String requestedAlias = packet.getFrom();
 
-                // Validaciones [cite: 106, 107]
+                // Validaciones
                 if (clients.size() >= maxClients) {
                     sendError("El servidor está lleno.");
                     closeConnection();
@@ -47,16 +45,16 @@ public class ClientHandler extends Thread {
                     closeConnection();
                     return;
                 } else {
-                    // ÉXITO: Registramos al usuario
+                    // Registramos al usuario
                     this.myAlias = requestedAlias;
-                    clients.put(myAlias, this); // Nos añadimos al mapa compartido [cite: 93]
+                    clients.put(myAlias, this);
 
                     System.out.println("Cliente conectado: " + myAlias);
 
-                    // Confirmamos al cliente que entró bien [cite: 108]
+                    // Confirmamos conexión
                     sendMessage(new ChatPacket(ChatPacketType.CONNECT, myAlias, "Conexión exitosa"));
 
-                    // Notificamos a TODOS los demás que alguien entró [cite: 108]
+                    // Notificamos conexión a los demás
                     broadcast(new ChatPacket(ChatPacketType.USER_JOINED, myAlias, myAlias + " se ha unido al chat."), false);
                 }
             } else {
@@ -71,28 +69,28 @@ public class ClientHandler extends Thread {
 
                 switch (inputPacket.getType()) {
                     case PUBLIC_MSG:
-                        // Reenviar a todos MENOS al emisor [cite: 110]
+                        // Reenviar a todos menos al emisor
                         System.out.println("Public de " + myAlias + ": " + inputPacket.getText());
                         ChatPacket publicMsg = new ChatPacket(ChatPacketType.PUBLIC_MSG, myAlias, inputPacket.getText());
                         broadcast(publicMsg, true);
                         break;
 
                     case PRIVATE_MSG:
-                        // Buscar destinatario y enviar [cite: 113]
+                        // Buscar destinatario y enviar
                         String targetAlias = inputPacket.getTo();
                         ClientHandler targetHandler = clients.get(targetAlias);
 
                         if (targetHandler != null) {
                             ChatPacket privateMsg = new ChatPacket(ChatPacketType.PRIVATE_MSG, myAlias, inputPacket.getText());
                             privateMsg.setTo(targetAlias);
-                            targetHandler.sendMessage(privateMsg); // Llamada directa al hilo del otro usuario [cite: 131]
+                            targetHandler.sendMessage(privateMsg);
                         } else {
-                            sendError("Usuario '" + targetAlias + "' no encontrado."); // [cite: 112]
+                            sendError("Usuario '" + targetAlias + "' no encontrado.");
                         }
                         break;
 
                     case USER_LIST_REQ:
-                        // Generar lista de usuarios excluyendo al solicitante [cite: 115]
+                        // Generar lista de usuarios excluyendo al solicitante
                         List<String> userList = new ArrayList<>(clients.keySet());
                         userList.remove(myAlias);
 
@@ -142,7 +140,7 @@ public class ClientHandler extends Thread {
     private void broadcast(ChatPacket packet, boolean excludeMe) {
         for (ClientHandler client : clients.values()) {
             if (excludeMe && client == this) {
-                continue; // Saltar al emisor [cite: 110, 115]
+                continue; // Saltar al emisor
             }
             client.sendMessage(packet);
         }

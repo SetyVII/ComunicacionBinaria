@@ -6,8 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatServer {
 
-    // Estructura compartida OBLIGATORIA: Clave = Alias, Valor = Hilo del cliente
-    // La hacemos estática y pública (o accesible) para que los hilos puedan acceder a ella.
+    // Estructura compartida: Clave = Alias, Valor = Hilo del cliente
     public static ConcurrentHashMap<String, ClientHandler> clients = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
@@ -50,7 +49,7 @@ public class ChatServer {
                 // Aunque el usuario no tiene alias aún, si el servidor está lleno físicamente,
                 // el handler deberá encargarse de rechazarlo en el handshake.
 
-                // Creamos el hilo para atender a este cliente [cite: 90]
+                // Creamos el hilo para atender a este cliente
                 // Pasamos el socket, la lista de clientes (mapa) y el límite para validar después.
                 ClientHandler handler = new ClientHandler(socket, clients, maxClients);
                 handler.start(); // Iniciamos el hilo (método run)
